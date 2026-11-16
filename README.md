@@ -81,3 +81,12 @@ mysql -u root -p < query_database.sql
 - Bekleme listesinde loyalty önceliği otomatik değil, `position` elle veriliyor.
 - Gümrük kuralı (sınır ötesi kargo ≥ 1 kayıt), bağımlı indirimi ve koltuk sayısı limiti şu an veritabanında zorlanmıyor; trigger / stored procedure ile eklenebilir.
 - Performans için ek `INDEX` ve raporlar için `VIEW` tanımlanmamış.
+## 🖥️ Uygulama (Streamlit)
+`app.py` veritabanına bağlanan bir Streamlit arayüzüdür (yolcu/personel girişi, kayıt, rezervasyon, bakım kaydı vb.).
+```bash
+pip install -r requirements.txt
+# PowerShell
+$env:DB_PASSWORD="mysql_sifren"
+streamlit run app.py
+```
+Bağlantı bilgileri ortam değişkenlerinden okunur: `DB_HOST` (varsayılan localhost), `DB_USER` (varsayılan root), `DB_PASSWORD`. Önce SQL dosyalarını çalıştırıp veritabanını oluşturmayı unutma.
