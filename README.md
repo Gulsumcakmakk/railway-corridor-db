@@ -1,13 +1,38 @@
-# 🚆 Railway Corridor — Veritabanı Projesi
+# 🚆 Railway Corridor — Veritabanı ve Rezervasyon Uygulaması
 
-Suudi Arabistan → Ürdün → Suriye → Türkiye hattını kapsayan **çok ülkeli bir demiryolu koridoru** için tasarlanmış ilişkisel veritabanı (MySQL). Yolcu taşımacılığı, yük/kargo, gümrük, personel ve bakım süreçlerini tek şemada modeller.
+> **EN:** A relational database (MySQL) and Streamlit app modeling a multi-country railway corridor (Saudi Arabia → Jordan → Syria → Türkiye): passenger booking, freight, customs, staff and maintenance.
 
-## 📁 Dosyalar
+Suudi Arabistan → Ürdün → Suriye → Türkiye hattını kapsayan **çok ülkeli bir demiryolu koridoru** için tasarlanmış ilişkisel veritabanı (MySQL) ve bu veritabanını kullanan Streamlit arayüzü. Yolcu taşımacılığı, yük/kargo, gümrük, personel ve bakım süreçlerini tek şemada modeller.
+
+**Teknolojiler:** MySQL 8 · Python · Streamlit · pandas · mysql-connector-python
+
+## 📁 Proje Yapısı
 | Dosya | Açıklama |
 |---|---|
-| `create_database.sql` | `railway_corridor` veritabanını sıfırdan oluşturur (`DROP DATABASE IF EXISTS` + 17 tablo) |
+| `create_database.sql` | `railway_corridor` veritabanını ve 17 tabloyu oluşturur (`DROP DATABASE IF EXISTS` + `CREATE`) |
 | `insert_database.sql` | Her tabloya örnek veri ekler (önce `TRUNCATE` ile temizler) |
 | `query_database.sql` | 10 adet örnek rapor sorgusu |
+| `app.py` | Streamlit arayüzü (giriş, kayıt, rezervasyon, bakım kaydı) |
+| `requirements.txt` | Python bağımlılıkları |
+| `.streamlit/config.toml` | Arayüz teması |
+
+## ▶️ Kurulum ve Çalıştırma
+Gereksinimler: **MySQL 8.0.16+** (`CHECK` kısıtları için) ve **Python 3.9+**
+
+**1. Veritabanını kur**
+```bash
+mysql -u root -p < create_database.sql
+mysql -u root -p < insert_database.sql
+mysql -u root -p < query_database.sql   # örnek sorgular (isteğe bağlı)
+```
+
+**2. Uygulamayı çalıştır**
+```powershell
+pip install -r requirements.txt
+$env:DB_PASSWORD="mysql_sifren"      # Linux/macOS: export DB_PASSWORD=...
+streamlit run app.py
+```
+Bağlantı bilgileri ortam değişkenlerinden okunur: `DB_HOST` (varsayılan `localhost`), `DB_USER` (varsayılan `root`), `DB_PASSWORD`.
 
 ## 🧱 Veri Modeli (17 tablo)
 | Alan | Tablolar |
@@ -41,21 +66,18 @@ erDiagram
     TrackSegment ||--o{ MaintenanceRecord : serviced
 ```
 
-## ✅ Veritabanı seviyesinde uygulanan iş kuralları
+## ✅ Veritabanı Seviyesinde Uygulanan İş Kuralları
 - **Koltuk çakışması yok:** `UNIQUE (schedule_id, seat_number)`
 - **Personel aynı gün iki trende çalışamaz:** `UNIQUE (staff_id, travel_date)`
 - **Bir rezervasyon = bir ödeme:** `Payment.reservation_id` UNIQUE
-- **Bir trenin durak sırası ve durağı tekrar edemez:** `UNIQUE (train_id, stop_sequence)` / `(train_id, station_id)`
-- **Geçerlilik kontrolleri (CHECK):** durum/tip alanları için sabit değer listeleri, mesafe/fiyat/ağırlık > 0, `station_from <> station_to`, bakım kaydında en az bir hedef (tren / istasyon / hat)
-- **Sadakat sınıfı:** none / green / silver / gold (`Passenger.loyalty_class`)
+- **Durak sırası ve durak tekrar edemez:** `UNIQUE (train_id, stop_sequence)` / `(train_id, station_id)`
+- **Geçerlilik kontrolleri (CHECK):** durum/tip listeleri, mesafe/fiyat/ağırlık > 0, `station_from <> station_to`, bakım kaydında en az bir hedef (tren / istasyon / hat)
+- **Sadakat sınıfları:** none / green / silver / gold
 - **Bağımlı yolcu indirimi:** %25 (örnek veride 300 → 225)
 - **Bekleme listesi:** koltuk dolunca `WaitingList` kaydı, `position` ile sıralama
-- **Sınır ötesi kargo → gümrük kaydı:** `CustomsClearance` tablosu ile takip
+- **Sınır ötesi kargo:** `CustomsClearance` ile gümrük takibi
 
-## 📊 Örnek veri
-4 ülke, 6 istasyon, 4 hat parçası, 3 tren (yolcu / yük / karma), 3 sefer, 4 yolcu, 2 bağımlı, 4 rezervasyon, 3 ödeme, 2 bekleme kaydı, 3 personel, 2 kargo, 2 gümrük kaydı, 3 bakım kaydı.
-
-## 🔍 Sorgular (`query_database.sql`)
+## 🔍 Örnek Sorgular (`query_database.sql`)
 1. Seçilen tarihte aktif seferler
 2. Trenin güzergah sırası (ülke bilgisiyle)
 3. Yolcunun rezervasyon detayları
@@ -67,26 +89,11 @@ erDiagram
 9. Tren bakım geçmişi
 10. Tarihe göre personel atamaları
 
-## ▶️ Kurulum
-Gereksinim: **MySQL 8.0.16+** (`CHECK` kısıtları için).
-```bash
-mysql -u root -p < create_database.sql
-mysql -u root -p < insert_database.sql
-mysql -u root -p < query_database.sql
-```
+## 📊 Örnek Veri
+4 ülke, 6 istasyon, 4 hat parçası, 3 tren (yolcu / yük / karma), 3 sefer, 4 yolcu, 2 bağımlı, 4 rezervasyon, 3 ödeme, 2 bekleme kaydı, 3 personel, 2 kargo, 2 gümrük kaydı, 3 bakım kaydı.
 
-## ⚠️ Bilinen notlar / geliştirme fikirleri
-- `query_database.sql` içindeki bazı sorgular (1, 5, 6, 10) **2025** tarihlerini kullanıyor, örnek veri ise **2026** → bu sorgular boş dönebilir; tarihlerin güncellenmesi gerekir.
-- Örnek veride şifreler düz metin (`hash1` vb.); gerçek kullanımda bcrypt/argon2 hash'i gerekir.
-- Bekleme listesinde loyalty önceliği otomatik değil, `position` elle veriliyor.
-- Gümrük kuralı (sınır ötesi kargo ≥ 1 kayıt), bağımlı indirimi ve koltuk sayısı limiti şu an veritabanında zorlanmıyor; trigger / stored procedure ile eklenebilir.
-- Performans için ek `INDEX` ve raporlar için `VIEW` tanımlanmamış.
-## 🖥️ Uygulama (Streamlit)
-`app.py` veritabanına bağlanan bir Streamlit arayüzüdür (yolcu/personel girişi, kayıt, rezervasyon, bakım kaydı vb.).
-```bash
-pip install -r requirements.txt
-# PowerShell
-$env:DB_PASSWORD="mysql_sifren"
-streamlit run app.py
-```
-Bağlantı bilgileri ortam değişkenlerinden okunur: `DB_HOST` (varsayılan localhost), `DB_USER` (varsayılan root), `DB_PASSWORD`. Önce SQL dosyalarını çalıştırıp veritabanını oluşturmayı unutma.
+## 🚀 Gelecek Çalışmalar
+- Şifrelerin güvenli hash (bcrypt/argon2) ile saklanması (örnek veride demo amaçlı düz metin)
+- Trigger / stored procedure ile otomatik kurallar: gümrük zorunluluğu, bağımlı indirimi, koltuk kapasitesi, sadakat önceliğine göre bekleme listesi
+- Performans için `INDEX`, raporlar için `VIEW` tanımları
+- Uygulama ekran görüntülerinin eklenmesi
